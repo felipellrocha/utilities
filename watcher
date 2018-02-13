@@ -3,7 +3,7 @@
 
 function watch-log() {
   location=$(git rev-parse --show-toplevel)
-  fswatch -or $location/.git | while read MODFILE
+  fswatch -or $location/.git -e $location/.git/index.lock | while read MODFILE
   do
     tty=$(ps -o tty= -p $$)
     pids=$(pgrep -t $tty $PAGER)
@@ -37,22 +37,23 @@ function differ() {
   git --paginate diff
 }
 
-function watch-test() {
+function watch-status() {
   location=$(git rev-parse --show-toplevel)
-  clear;
-
-  fswatch -or $location -e "*(node_modules|dist)*" | while read MODFILE
+  echo $location
+  fswatch -or $location -e "*(.git)*" | while read MODFILE
   do
-    #tty=$(ps -o tty= -p $$)
-    tty="ttys004"
-    pid=$(pgrep -t $tty git)
-    echo $tty
-    echo $pid
-    echo "am i here?"
-    echo ""
-    #git diff
-    kill $pid
+    tty=$(ps -o tty= -p $$)
+    pids=$(pgrep -t $tty $PAGER)
+    while read -r pid; do
+      echo $pid
+      kill -9 $pid
+    done <<< "$pids"
   done
+}
+
+function get-status {
+  clear;
+  git --paginate status
 }
 
 case $1 in
@@ -61,13 +62,20 @@ case $1 in
     while true; do
       logger
     done
-    ;;
+  ;;
   "diff" )
     watch-diff &
     while true; do
-      differ;
+      differ
     done
-    ;;
-  "test" ) watch-test ;;
-  * ) echo "Watcher not found. Good bye!" ;;
+  ;;
+  "status" )
+    watch-status &
+    while true; do
+      get-status
+    done
+  ;;
+  * )
+    echo "Watcher not found. Good bye!"
+  ;;
 esac
