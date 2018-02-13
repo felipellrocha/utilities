@@ -1,0 +1,73 @@
+#!/bin/bash
+
+
+function watch-log() {
+  location=$(git rev-parse --show-toplevel)
+  fswatch -or $location/.git | while read MODFILE
+  do
+    tty=$(ps -o tty= -p $$)
+    pids=$(pgrep -t $tty $PAGER)
+    while read -r pid; do
+      echo $pid
+      kill -9 $pid
+    done <<< "$pids"
+ done
+}
+
+function logger() {
+  clear;
+  git --paginate log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset)%C(bold yellow)%d%C(reset) %C(white)%s%C(reset) - %C(bold green)(%ar)%C(reset)' --all
+}
+
+function watch-diff() {
+  location=$(git rev-parse --show-toplevel)
+  fswatch -or $location -e "*(node_modules|dist)*" | while read MODFILE
+  do
+    tty=$(ps -o tty= -p $$)
+    pids=$(pgrep -t $tty $PAGER)
+    while read -r pid; do
+      echo $pid
+      kill -9 $pid
+    done <<< "$pids"
+  done
+}
+
+function differ() {
+  clear;
+  git --paginate diff
+}
+
+function watch-test() {
+  location=$(git rev-parse --show-toplevel)
+  clear;
+
+  fswatch -or $location -e "*(node_modules|dist)*" | while read MODFILE
+  do
+    #tty=$(ps -o tty= -p $$)
+    tty="ttys004"
+    pid=$(pgrep -t $tty git)
+    echo $tty
+    echo $pid
+    echo "am i here?"
+    echo ""
+    #git diff
+    kill $pid
+  done
+}
+
+case $1 in
+  "log" )
+    watch-log &
+    while true; do
+      logger
+    done
+    ;;
+  "diff" )
+    watch-diff &
+    while true; do
+      differ;
+    done
+    ;;
+  "test" ) watch-test ;;
+  * ) echo "Watcher not found. Good bye!" ;;
+esac
