@@ -21,7 +21,7 @@ function logger() {
 
 function watch-diff-cached() {
   location=$(git rev-parse --show-toplevel)
-  fswatch -or $location -e "*($location/.git/index.lock|node_modules|dist)*" | while read MODFILE
+  fswatch -o $location/.git/index $location/.git/logs/HEAD | while read MODFILE
   do
     tty=$(ps -o tty= -p $$)
     pids=$(pgrep -t $tty $PAGER)
@@ -58,7 +58,7 @@ function differ() {
 function watch-status() {
   location=$(git rev-parse --show-toplevel)
   echo $location
-  fswatch -or $location/.git/index | while read MODFILE
+  fswatch -o $location/.git/index $location/.git/logs/HEAD | while read MODFILE
   do
     tty=$(ps -o tty= -p $$)
     pids=$(pgrep -t $tty $PAGER)
@@ -82,7 +82,7 @@ case $1 in
     done
   ;;
   "cache" )
-    watch-diff-cache &
+    watch-diff-cached &
     while true; do
       cacher
     done
