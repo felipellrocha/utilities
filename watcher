@@ -19,9 +19,27 @@ function logger() {
   git --paginate log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset)%C(bold yellow)%d%C(reset) %C(white)%s%C(reset) - %C(bold green)(%ar)%C(reset)' --all
 }
 
+function watch-diff-cached() {
+  location=$(git rev-parse --show-toplevel)
+  fswatch -or $location -e "*($location/.git/index.lock|node_modules|dist)*" | while read MODFILE
+  do
+    tty=$(ps -o tty= -p $$)
+    pids=$(pgrep -t $tty $PAGER)
+    while read -r pid; do
+      echo $pid
+      kill -9 $pid
+    done <<< "$pids"
+  done
+}
+
+function cacher() {
+  clear;
+  git --paginate diff --cached
+}
+
 function watch-diff() {
   location=$(git rev-parse --show-toplevel)
-  fswatch -or $location -e "*(node_modules|dist)*" | while read MODFILE
+  fswatch -or $location -e "*($location/.git/index.lock|node_modules|dist)*" | while read MODFILE
   do
     tty=$(ps -o tty= -p $$)
     pids=$(pgrep -t $tty $PAGER)
@@ -40,7 +58,7 @@ function differ() {
 function watch-status() {
   location=$(git rev-parse --show-toplevel)
   echo $location
-  fswatch -or $location -e "*(.git)*" | while read MODFILE
+  fswatch -or $location/.git/index | while read MODFILE
   do
     tty=$(ps -o tty= -p $$)
     pids=$(pgrep -t $tty $PAGER)
@@ -61,6 +79,12 @@ case $1 in
     watch-log &
     while true; do
       logger
+    done
+  ;;
+  "cache" )
+    watch-diff-cache &
+    while true; do
+      cacher
     done
   ;;
   "diff" )
