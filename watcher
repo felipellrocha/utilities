@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 function watch-log() {
   location=$(git rev-parse --show-toplevel)
   fswatch -or $location/.git -e $location/.git/index.lock | while read MODFILE
@@ -19,6 +18,23 @@ function logger() {
   git --paginate log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset)%C(bold yellow)%d%C(reset) %C(white)%s%C(reset) - %C(bold green)(%ar)%C(reset)' --all
 }
 
+function watch-lint() {
+  fswatch -or src | while read MODFILE
+  do
+    tty=$(ps -o tty= -p $$)
+    pids=$(pgrep -t $tty $PAGER)
+    while read -r pid; do
+      echo $pid
+      kill -9 $pid
+    done <<< "$pids"
+  done
+}
+
+function linter() {
+  clear;
+  yarn lint --color | less
+}
+
 function watch-diff-cached() {
   location=$(git rev-parse --show-toplevel)
   fswatch -o $location/.git/index $location/.git/logs/HEAD | while read MODFILE
@@ -34,7 +50,7 @@ function watch-diff-cached() {
 
 function cacher() {
   clear;
-  git --paginate diff --cached
+  git --paginate diff --cached $@
 }
 
 function watch-diff() {
@@ -52,7 +68,7 @@ function watch-diff() {
 
 function differ() {
   clear;
-  git --paginate diff
+  git --paginate diff $@
 }
 
 function watch-status() {
@@ -84,13 +100,19 @@ case $1 in
   "cache" )
     watch-diff-cached &
     while true; do
-      cacher
+      cacher ${@:2}
     done
   ;;
   "diff" )
     watch-diff &
     while true; do
-      differ
+      differ ${@:2}
+    done
+  ;;
+  "lint" )
+    watch-lint &
+    while true; do
+      linter ${@:2}
     done
   ;;
   "status" )

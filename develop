@@ -1,0 +1,13 @@
+#!/bin/bash
+
+case $1 in
+  "new" )
+    telepresence --method inject-tcp --run-shell --new-deployment ${@:2}
+  ;;
+  "swap" )
+    telepresence --method inject-tcp --run-shell --swap-deployment ${@:2}
+  ;;
+  * )
+    echo "Method not found. Good bye!"
+  ;;
+esac
