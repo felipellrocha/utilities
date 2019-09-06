@@ -1,11 +1,11 @@
 #!/bin/bash
 
-case $1 in
-  "new" )
-    telepresence --method inject-tcp --run-shell --new-deployment ${@:2}
+case $2 in
+  "api" )
+    pensieve -s ${1}-${2} -i felipellrocha/node
   ;;
-  "swap" )
-    telepresence --method inject-tcp --run-shell --swap-deployment ${@:2}
+  "banking"|"recommender"|"analysis"|"bridge"|"housing"|"auth"|"budget"|"iex"|"market"|"plaid"|"trader"|"user")
+    pensieve -s ${1}-${2} -i felipellrocha/rust:latest
   ;;
   * )
     echo "Method not found. Good bye!"

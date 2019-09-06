@@ -1,0 +1,11 @@
+#!/bin/bash
+
+case $1 in
+  "polo" )
+    HASH="$(git rev-parse --verify HEAD)"
+    helm upgrade -i master cluster  --set global.version=$HASH
+  ;;
+  * )
+    echo "Method not found. Good bye!"
+  ;;
+esac
