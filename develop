@@ -1,10 +1,96 @@
 #!/bin/bash
 
+case $1 in
+  # Deletes borked deployments. This is useful if minikube crashes mid-
+  # development, or for some reason you have phantom deployments laying
+  # around
+  "clear" )
+    kubectl delete deployments --selector development=pensieve
+    echo "cleared!"
+    exit
+  ;;
+  # Shortcut for getting your ingresses described
+  "ingress" )
+    kubectl describe ingress
+    exit
+  ;;
+  #
+  # Usage: cluster [ prod | local ]?
+  # 
+  # Leave it empty for the shell to print out the current context in usage
+  # Pass in either `prod` or `local` to switch contextes
+  #
+  "cluster" )
+    if [ -z "$2" ]; then
+      kubectl config current-context
+      exit
+    fi
+
+    case $2 in
+      "prod" )
+        kubectl config use-context gke_eminent-hall-253922_us-west1-a_bkpk-prod
+      ;;
+      * )
+        kubectl config use-context minikube
+      ;;
+    esac
+    exit
+  ;;
+  # Shortcut for getting your services information
+  # Useful for discovering which IP address your ingresses attach into
+  "services" )
+    kubectl get services
+    exit
+  ;;
+  # Shortcut for getting your pods information
+  "pods" )
+    kubectl get pods
+    exit
+  ;;
+  # Kubenetes event logs
+  #
+  # If for some reason your cluster is not starting, or an image is not
+  # being pulled, this is a great place to start investigating
+  "events" )
+    kubectl get events -w
+    exit
+  ;;
+  # Grabs the bash shell of a pod
+  "shell" )
+    kubectl exec -it $2 -- /bin/bash
+    exit
+  ;;
+  # Tails the log of a pod
+  "logs" )
+    kubectl logs -f ${@:2}
+    exit
+  ;;
+esac
+
+# If none of the above matches, then we go into the pensieve mode.
+# Usage: [deployment name] [service name]
+# ex: develop master books
+#
+# Uses pensieve to take down a deployment, create a new one, point the
+# service to the new deployment, and serve a shell so you can use for
+# deployment.
+#
+# Your development folder gets synced with the pod using NFS.
+#
+# Run,
+#
+# ```
+# echo "$(pwd) -alldirs -mapall="$(id -u)":"$(id -g)" $(minikube ip)"
+# sudo nfsd restart
+# ```
+#
+# Before running this command, otherwise `pensieve` will stall.
+
 case $2 in
-  "api" )
+  "api"|"platform"|"renderer")
     pensieve -s ${1}-${2} -i felipellrocha/node
   ;;
-  "banking"|"recommender"|"analysis"|"bridge"|"housing"|"auth"|"budget"|"iex"|"market"|"plaid"|"trader"|"user")
+  "auth"|"user"|"renderer"|"books")
     pensieve -s ${1}-${2} -i felipellrocha/rust:latest
   ;;
   * )
